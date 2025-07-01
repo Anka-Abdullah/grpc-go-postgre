@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-exmpl-app
+  labels:
+    app: grpc-exmpl
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: grpc-exmpl
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: grpc-exmpl
+        version: v1
+    spec:
+      containers:
+      - name: grpc-exmpl
+        image: grpc-exmpl:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: grpc
+          protocol: TCP
+        env:
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        - name: DATABASE_HOST
+          valueFrom:
+            secretKeyRef:
+              name: grpc-exmpl-secret
+              key: db-host
+        - name: DATABASE_PORT
+          value: "5432"
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: grpc-exmpl-secret
+              key: db-user
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grpc-exmpl-secret
+              key: db-password
+        - name: DATABASE_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: grpc-exmpl-secret
+              key: db-name
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: grpc-exmpl-secret
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - grpc_health_probe
+            - -addr=:8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - grpc_health_probe
+            - -addr=:8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: config-volume
+          mountPath: /root/configs
+          readOnly: true
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: config-volume
+        configMap:
+          name: grpc-exmpl-config
+      - name: tmp-volume
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grpc-exmpl-config
+data:
+  app.yaml: |
+    server:
+      port: "8080"
+      host: "0.0.0.0"
+      read_timeout: "30s"
+      write_timeout: "30s"
+      shutdown_timeout: "5s"
+    database:
+      host: "postgres-service"
+      port: "5432"
+      user: "postgres"
+      password: "postgres"
+      database: "grpc_exmpl"
+      ssl_mode: "disable"
+      max_open_conns: 25
+      max_idle_conns: 5
+      max_lifetime: "5m"
+    jwt:
+      secret: "your-super-secret-jwt-key-change-this-in-production"
+      expiration: "24h"
+    log:
+      level: "info"
+      format: "json"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grpc-exmpl-secret
+type: Opaque
+data:
+  db-host: cG9zdGdyZXMtc2VydmljZQ== # postgres-service
+  db-user: cG9zdGdyZXM= # postgres
+  db-password: cG9zdGdyZXM= # postgres
+  db-name: Z3JwY19leG1wbA== # grpc_exmpl
+  jwt-secret: eW91ci1zdXBlci1zZWNyZXQtand0LWtleS1jaGFuZ2UtdGhpcy1pbi1wcm9kdWN0aW9u # your-super-secret-jwt-key-change-this-in-production

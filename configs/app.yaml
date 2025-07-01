@@ -1,0 +1,25 @@
+server:
+  port: "8080"
+  host: "0.0.0.0"
+  read_timeout: "30s"
+  write_timeout: "30s"
+  shutdown_timeout: "5s"
+
+database:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  password: "postgres"
+  database: "grpc_exmpl"
+  ssl_mode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  max_lifetime: "5m"
+
+jwt:
+  secret: "your-super-secret-jwt-key-change-this-in-production"
+  expiration: "24h"
+
+log:
+  level: "info"
+  format: "json"
