@@ -11,8 +11,6 @@ import (
 	pbuser "grpc-exmpl/proto/user"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -45,17 +43,19 @@ func (s *Server) Start() error {
 
 	// Create logrus entry for gRPC logging
 	logrusEntry := logrus.NewEntry(logrus.StandardLogger())
+	loggingMiddleware := middleware.NewLoggingMiddleware(logrusEntry)
+	recoveryMiddleware := middleware.NewRecoveryMiddleware(logrusEntry)
 
 	// Create gRPC server with middleware
 	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_logrus.UnaryServerInterceptor(logrusEntry),
-			grpc_recovery.UnaryServerInterceptor(),
+			loggingMiddleware.UnaryInterceptor,
+			recoveryMiddleware.UnaryInterceptor,
 			authMiddleware.UnaryInterceptor,
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_logrus.StreamServerInterceptor(logrusEntry),
-			grpc_recovery.StreamServerInterceptor(),
+			loggingMiddleware.StreamInterceptor,
+			recoveryMiddleware.StreamInterceptor,
 			authMiddleware.StreamInterceptor,
 		)),
 	)

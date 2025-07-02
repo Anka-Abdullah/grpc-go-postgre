@@ -56,6 +56,8 @@ func main() {
 		logrus.Fatalf("Failed to run migrations: %v", err)
 	}
 
+	logrus.Info("Database migrations completed")
+
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
@@ -68,7 +70,7 @@ func main() {
 	server := grpc.NewServer(userService, productService, cfg.Server.Port)
 
 	// Setup graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
+	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go func() {

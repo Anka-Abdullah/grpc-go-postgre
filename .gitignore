@@ -1,0 +1,11 @@
+
+# Build artifacts
+/bin
+*.exe
+
+# Temporary files
+*.log
+/coverage.out
+
+# Local environment files
+.env
