@@ -31,7 +31,7 @@ func main() {
 
 	logrus.Info("Starting gRPC server application...")
 
-	// Initialize database
+	// Setup database config
 	dbConfig := &database.Config{
 		Host:         cfg.Database.Host,
 		Port:         cfg.Database.Port,
@@ -44,31 +44,33 @@ func main() {
 		MaxLifetime:  cfg.Database.MaxLifetime,
 	}
 
+	// Connect to the database
 	db, err := database.NewPostgresConnection(dbConfig)
 	if err != nil {
 		logrus.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer database.CloseConnection(db)
 
-	// Run database migrations
+	// Run migrations
 	if err := database.RunMigrations(db); err != nil {
 		logrus.Fatalf("Failed to run migrations: %v", err)
 	}
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
+	productRepo := repository.NewProductRepository(db)
 
 	// Initialize services
 	userService := service.NewUserService(userRepo, cfg.JWT.Secret)
+	productService := service.NewProductService(productRepo)
 
 	// Initialize gRPC server
-	server := grpc.NewServer(userService, cfg.Server.Port)
+	server := grpc.NewServer(userService, productService, cfg.Server.Port)
 
-	// Create context for graceful shutdown
-	_, cancel := context.WithCancel(context.Background())
+	// Setup graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Handle graceful shutdown
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -77,12 +79,11 @@ func main() {
 		logrus.Info("Shutting down server...")
 		cancel()
 
-		// Give some time for graceful shutdown
 		time.Sleep(cfg.Server.ShutdownTimeout)
 		server.Stop()
 	}()
 
-	// Start server
+	// Start the server
 	if err := server.Start(); err != nil {
 		logrus.Fatalf("Failed to start server: %v", err)
 	}

@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "grpc-exmpl/proto/product";
+
+// ProductService defines RPC methods for managing products.
+service ProductService {
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
+  rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+}
+
+// ProductData represents the product entity.
+message ProductData {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 stock = 5;
+  int64 user_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+// Create
+message CreateProductRequest {
+  string name = 1;
+  string description = 2;
+  double price = 3;
+  int32 stock = 4;
+  int64 user_id = 5;
+}
+
+message CreateProductResponse {
+  bool success = 1;
+  string message = 2;
+  ProductData product = 3;
+}
+
+// Get
+message GetProductRequest {
+  int64 id = 1;
+}
+
+message GetProductResponse {
+  bool success = 1;
+  string message = 2;
+  ProductData product = 3;
+}
+
+// List
+message ListProductsRequest {
+  int64 user_id = 1;
+}
+
+message ListProductsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated ProductData products = 3;
+}
+
+// Update
+message UpdateProductRequest {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+  int32 stock = 5;
+}
+
+message UpdateProductResponse {
+  bool success = 1;
+  string message = 2;
+  ProductData product = 3;
+}
+
+// Delete
+message DeleteProductRequest {
+  int64 id = 1;
+}
+
+message DeleteProductResponse {
+  bool success = 1;
+  string message = 2;
+}

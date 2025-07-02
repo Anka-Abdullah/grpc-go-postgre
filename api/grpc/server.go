@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net"
 
-	"grpc-exmpl/internal/handler/grpc"
+	handler "grpc-exmpl/internal/handler/grpc"
 	"grpc-exmpl/internal/middleware"
 	"grpc-exmpl/internal/service"
-	pb "grpc-exmpl/proto/user"
+	pbproduct "grpc-exmpl/proto/product"
+	pbuser "grpc-exmpl/proto/user"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -18,15 +19,17 @@ import (
 )
 
 type Server struct {
-	grpcServer  *grpc.Server
-	userService service.UserService
-	port        string
+	grpcServer     *grpc.Server
+	userService    service.UserService
+	productService service.ProductService
+	port           string
 }
 
-func NewServer(userService service.UserService, port string) *Server {
+func NewServer(userService service.UserService, productService service.ProductService, port string) *Server {
 	return &Server{
-		userService: userService,
-		port:        port,
+		userService:    userService,
+		productService: productService,
+		port:           port,
 	}
 }
 
@@ -57,10 +60,10 @@ func (s *Server) Start() error {
 		)),
 	)
 
-	// Register services
+	// Register all services
 	s.registerServices()
 
-	// Enable reflection for development
+	// Enable reflection (for development/debugging)
 	reflection.Register(s.grpcServer)
 
 	logrus.Infof("gRPC server starting on port %s", s.port)
@@ -83,8 +86,12 @@ func (s *Server) Stop() {
 
 func (s *Server) registerServices() {
 	// Register User service
-	userHandler := grpc.NewUserHandler(s.userService)
-	pb.RegisterUserServiceServer(s.grpcServer, userHandler)
+	userHandler := handler.NewUserHandler(s.userService)
+	pbuser.RegisterUserServiceServer(s.grpcServer, userHandler)
+
+	// Register Product service
+	productHandler := handler.NewProductHandler(s.productService)
+	pbproduct.RegisterProductServiceServer(s.grpcServer, productHandler)
 
 	logrus.Info("gRPC services registered successfully")
 }

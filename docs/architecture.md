@@ -1,3 +1,4 @@
+<!-- /docs/architecture.md -->
 # Architecture Documentation
 
 ## Overview

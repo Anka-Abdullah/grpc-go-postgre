@@ -1,3 +1,4 @@
+<!-- /docs/README.md -->
 # gRPC Example Application
 
 A comprehensive gRPC-based application built with Go, featuring user authentication, database integration, and microservices architecture.
